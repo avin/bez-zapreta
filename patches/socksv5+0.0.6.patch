@@ -9,3 +9,15 @@ index ff212e5..482b7fb 100644
      dns = require('dns'),
      util = require('util'),
      inherits = util.inherits,
+diff --git a/node_modules/socksv5/lib/server.js b/node_modules/socksv5/lib/server.js
+index 2ecd0e5..8fb4a6e 100644
+--- a/node_modules/socksv5/lib/server.js
++++ b/node_modules/socksv5/lib/server.js
+@@ -245,6 +245,7 @@ function handleProxyError(socket, err) {
+         case 'ENOTFOUND':
+         case 'ETIMEDOUT':
+         case 'EHOSTUNREACH':
++        case 'EHOSTDOWN':
+           errbuf[1] = REP.HOSTUNREACH;
+         break;
+         case 'ENETUNREACH':
