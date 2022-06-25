@@ -35,6 +35,9 @@ declare module 'socksv5' {
 
   export const auth: {
     None: () => Auth;
-    UserPassword: (login: string, password: string) => Auth;
+    UserPassword: (
+      arg1: ((l: string, p: string, r: (b: boolean) => void) => void) | string,
+      arg2?: string,
+    ) => Auth;
   };
 }

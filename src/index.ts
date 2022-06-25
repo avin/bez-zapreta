@@ -10,6 +10,8 @@ import dns from 'dns';
 type BaseOptions = {
   host: string;
   port: number;
+  username: string;
+  password: string;
   ipsUrl: string;
 };
 
@@ -51,7 +53,14 @@ class BezZapreta {
     await this.prepareIpBlocks();
 
     const server = socks.createServer(async (info, accept, deny): Promise<void> => {
-      const dstAddrIp = (await util.promisify(dns.resolve4)(info.dstAddr))[0];
+      let dstAddrIp: string;
+
+      try {
+        dstAddrIp = (await util.promisify(dns.resolve4)(info.dstAddr))[0];
+      } catch (e) {
+        console.log(e);
+        return deny();
+      }
 
       if (this.isIpBanned(dstAddrIp)) {
         if (this.options.method === 'ssh') {
@@ -122,11 +131,19 @@ class BezZapreta {
       }
     });
 
-    server.listen(this.options.port, 'localhost', () => {
-      console.info('Server started on port: ', this.options.port);
+    server.listen(this.options.port, this.options.host, () => {
+      console.info('Server started at: ', `${this.options.host}:${this.options.port}`);
     });
 
-    server.useAuth(socks.auth.None());
+    if (this.options.username && this.options.password) {
+      server.useAuth(
+        socks.auth.UserPassword((user, password, cb) => {
+          cb(user === this.options.username && password === this.options.password);
+        }),
+      );
+    } else {
+      server.useAuth(socks.auth.None());
+    }
   }
 }
 
