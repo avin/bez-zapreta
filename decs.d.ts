@@ -20,7 +20,7 @@ declare module 'socksv5' {
   function acceptHandler(intercept: true): net.Socket | undefined;
   function acceptHandler(intercept?: false): undefined;
   export function createServer(
-    cb: (info: Info, accept: typeof acceptHandler, deny: () => void) => any,
+    cb: (info: Info, accept: typeof acceptHandler, deny: () => void) => Promise<void> | void,
   ): SocksServer;
   export function connect(
     ptions: {

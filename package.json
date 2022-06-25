@@ -1,7 +1,7 @@
 {
   "name": "bez-zapreta",
   "version": "0.1.0",
-  "description": "Use internet in Russia without pain",
+  "description": "Dynamic socks5 server",
   "main": "./dist/index.js",
   "bin": {
     "bezzapreta": "./dist/cli.js",
@@ -11,7 +11,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "ts-node ./src/cli.ts",
+    "start": "ts-node-transpile-only ./src/cli.ts",
     "prepublishOnly": "npm run build",
     "format": "prettier --write \"**/*.{js,ts,md,cjs}\" -c",
     "postinstall": "patch-package"
@@ -27,6 +27,8 @@
   "devDependencies": {
     "@types/node": "^17.0.42",
     "@types/yargs": "^17.0.10",
+    "@types/netmask": "^1.0.30",
+    "@types/ssh2": "^0.5.52",
     "@typescript-eslint/eslint-plugin": "^5.27.1",
     "@typescript-eslint/parser": "^5.27.1",
     "eslint": "^8.17.0",
@@ -35,11 +37,8 @@
     "typescript": "^4.7.3"
   },
   "dependencies": {
-    "@types/netmask": "^1.0.30",
-    "@types/ssh2": "^0.5.52",
     "netmask": "^2.0.2",
     "patch-package": "^6.4.7",
-    "socks": "^2.6.2",
     "socksv5": "^0.0.6",
     "ssh2": "^1.11.0",
     "yargs": "^17.5.1"
