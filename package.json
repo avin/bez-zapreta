@@ -16,6 +16,15 @@
     "format": "prettier --write \"**/*.{js,ts,md,cjs}\" -c",
     "postinstall": "patch-package"
   },
+  "files": [
+    "dist",
+    "patches",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avin/bez-zapreta"
+  },
   "keywords": [
     "rkn.gov.ru",
     "роскомнадзор",
