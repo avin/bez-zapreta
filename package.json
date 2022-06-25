@@ -1,6 +1,6 @@
 {
   "name": "bez-zapreta",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Dynamic socks5 server",
   "main": "./dist/index.js",
   "bin": {
