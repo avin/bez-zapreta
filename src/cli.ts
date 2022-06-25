@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import yargs from 'yargs/yargs';
 import BezZapreta, { BezZapretaOptions } from './index';
 import path from 'path';
