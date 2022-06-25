@@ -19,6 +19,8 @@ export type BezZapretaOptions =
       socks5: {
         host: string;
         port: number;
+        username?: string;
+        password?: string;
       };
     })
   | (BaseOptions & { method: 'ssh'; ssh: ConnectConfig });
@@ -92,13 +94,18 @@ class BezZapreta {
               clientSocket.pause();
             });
 
+            const { username, password } = this.options.socks5;
             socks.connect(
               {
                 host: info.dstAddr,
                 port: info.dstPort,
                 proxyHost: this.options.socks5.host,
                 proxyPort: this.options.socks5.port,
-                auths: [socks.auth.None()],
+                auths: [
+                  username && password
+                    ? socks.auth.UserPassword(username, password)
+                    : socks.auth.None(),
+                ],
               },
               function (socket) {
                 clientSocket.pipe(socket);
