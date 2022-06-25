@@ -1,0 +1,11 @@
+diff --git a/node_modules/socksv5/lib/client.js b/node_modules/socksv5/lib/client.js
+index ff212e5..482b7fb 100644
+--- a/node_modules/socksv5/lib/client.js
++++ b/node_modules/socksv5/lib/client.js
+@@ -1,5 +1,5 @@
+ var net = require('net'),
+-    normalizeConnectArgs = net._normalizeConnectArgs,
++    normalizeConnectArgs = net._normalizeConnectArgs || net._normalizeArgs,
+     dns = require('dns'),
+     util = require('util'),
+     inherits = util.inherits,
