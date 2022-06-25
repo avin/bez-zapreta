@@ -2,7 +2,6 @@ import yargs from 'yargs/yargs';
 import BezZapreta, { BezZapretaOptions } from './index';
 import path from 'path';
 import os from 'os';
-import net from 'net';
 
 const validateConfig = (config: Record<string, unknown>) => {
   if (!['socks5', 'ssh'].includes(config.method as string)) {

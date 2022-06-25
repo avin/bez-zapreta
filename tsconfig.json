@@ -62,5 +62,5 @@
     // "emitDecoratorMetadata": true,
   },
   "exclude": ["node_modules"],
-  "include": ["src/index.ts", "src/cli.ts"]
+  "include": ["src"],
 }
