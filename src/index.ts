@@ -93,8 +93,6 @@ class BezZapreta {
     const server = socks.createServer(async (info, accept, deny): Promise<void> => {
       let dstAddrIp = '';
 
-      const t1 = performance.now();
-
       const isAddrInApplyForDomainsList = checkStringInWildcardList(info.dstAddr, this.domains);
 
       try {
@@ -105,8 +103,19 @@ class BezZapreta {
         console.log('NS resolve err:', e);
       }
 
-      if (!dstAddrIp || isIpInBlocks(dstAddrIp, this.ipBlocks)) {
-        console.log('do for ', info.dstAddr);
+      const isAddrInIpBlocks = dstAddrIp && isIpInBlocks(dstAddrIp, this.ipBlocks);
+
+      if (!dstAddrIp || isAddrInApplyForDomainsList || isAddrInIpBlocks) {
+        const reason = (() => {
+          if (isAddrInApplyForDomainsList) {
+            return 'domain';
+          }
+          if (isAddrInIpBlocks) {
+            return 'ip';
+          }
+          return 'ns';
+        })();
+        console.info(`+ [${reason}]`, info.dstAddr);
         if (this.options.method === 'ssh') {
           const conn = new SshClient();
           conn
@@ -151,28 +160,19 @@ class BezZapreta {
 
             const { username, password } = this.options.socks5;
             socks
-              .connect(
-                {
-                  host: info.dstAddr,
-                  port: info.dstPort,
-                  proxyHost: this.options.socks5.host,
-                  proxyPort: this.options.socks5.port,
-                  localDNS: !!dstAddrIp, // резолвим на родительской стороне если самим не удалось
-                  auths: [
-                    username && password
-                      ? socks.auth.UserPassword(username, password)
-                      : socks.auth.None(),
-                  ],
-                },
-                () => {
-                  const t2 = performance.now();
-                  console.log('1:', t2 - t1);
-                },
-              )
+              .connect({
+                host: info.dstAddr,
+                port: info.dstPort,
+                proxyHost: this.options.socks5.host,
+                proxyPort: this.options.socks5.port,
+                localDNS: !!dstAddrIp, // резолвим на родительской стороне если самим не удалось
+                auths: [
+                  username && password
+                    ? socks.auth.UserPassword(username, password)
+                    : socks.auth.None(),
+                ],
+              })
               .on('connect', (parentSocket: Socket) => {
-                const t2 = performance.now();
-                console.log('2:', t2 - t1);
-
                 clientSocket.pipe(parentSocket).on('error', function (e) {
                   console.log('+94', e);
                   process.exit(1);

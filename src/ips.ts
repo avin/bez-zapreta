@@ -1,9 +1,4 @@
-import * as http from 'http';
-import * as https from 'https';
 import { Netmask } from 'netmask';
-
-
-
 
 export const getIpBlocks = (ipsList: string[]): Netmask[] => {
   return ipsList.reduce((acc, mask) => {

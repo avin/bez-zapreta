@@ -46,6 +46,7 @@ module.exports = {
   domainsUrls: ['https://community.antifilter.download/list/domains.lst'],
 
   // Автоматически применять правила для субдоменов из списка доменов (по умолчанию true)
+  // Например если у вас в списках доменов есть 'wixmp.com', то правила будут применены ко всем субдоменам '*.wixmp.com'
   withSubdomains: true,
 };
 ```
