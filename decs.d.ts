@@ -8,6 +8,7 @@ declare module 'socksv5' {
     listen: net.Server['listen'];
     useAuth(auth: Auth): void;
     close: net.Server['close'];
+    on: (what: string, cb: (...args: any[]) => void) => void;
   }
 
   type Info = {
@@ -28,6 +29,8 @@ declare module 'socksv5' {
       port: number;
       proxyHost: string;
       proxyPort: number;
+      localDNS?: boolean;
+      strictLocalDNS?: boolean;
       auths: Auth[];
     },
     cb: (s: Socket) => void,

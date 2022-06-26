@@ -53,16 +53,17 @@ class BezZapreta {
     await this.prepareIpBlocks();
 
     const server = socks.createServer(async (info, accept, deny): Promise<void> => {
-      let dstAddrIp: string;
+      let dstAddrIp = '';
 
       try {
-        dstAddrIp = (await util.promisify(dns.resolve4)(info.dstAddr))[0];
+        if (!info.dstAddr.endsWith('.onion')) {
+          dstAddrIp = (await util.promisify(dns.resolve4)(info.dstAddr))[0];
+        }
       } catch (e) {
         console.log(e);
-        return deny();
       }
 
-      if (this.isIpBanned(dstAddrIp)) {
+      if (!dstAddrIp || this.isIpBanned(dstAddrIp)) {
         if (this.options.method === 'ssh') {
           const conn = new SshClient();
           conn
@@ -93,6 +94,7 @@ class BezZapreta {
               );
             })
             .on('error', (err) => {
+              console.log('Parent SSH err: ', err);
               deny();
             })
             .connect(this.options.ssh);
@@ -104,24 +106,30 @@ class BezZapreta {
             });
 
             const { username, password } = this.options.socks5;
-            socks.connect(
-              {
-                host: info.dstAddr,
-                port: info.dstPort,
-                proxyHost: this.options.socks5.host,
-                proxyPort: this.options.socks5.port,
-                auths: [
-                  username && password
-                    ? socks.auth.UserPassword(username, password)
-                    : socks.auth.None(),
-                ],
-              },
-              function (socket) {
-                clientSocket.pipe(socket);
-                socket.pipe(clientSocket);
-                clientSocket.resume();
-              },
-            );
+            socks
+              .connect(
+                {
+                  host: info.dstAddr,
+                  port: info.dstPort,
+                  proxyHost: this.options.socks5.host,
+                  proxyPort: this.options.socks5.port,
+                  localDNS: !!dstAddrIp, // резолвим на родительской стороне если самим не удалось
+                  auths: [
+                    username && password
+                      ? socks.auth.UserPassword(username, password)
+                      : socks.auth.None(),
+                  ],
+                },
+                (parentSocket) => {
+                  clientSocket.pipe(parentSocket);
+                  parentSocket.pipe(clientSocket);
+                  clientSocket.resume();
+                },
+              )
+              .on('error', function (err) {
+                console.log('Parent socks5 err: ', err);
+                deny();
+              });
           }
         } else {
           deny();
@@ -133,6 +141,10 @@ class BezZapreta {
 
     server.listen(this.options.port, this.options.host, () => {
       console.info('Server started at: ', `${this.options.host}:${this.options.port}`);
+    });
+
+    server.on('error', (err) => {
+      console.log('Server error: ', err);
     });
 
     if (this.options.username && this.options.password) {
