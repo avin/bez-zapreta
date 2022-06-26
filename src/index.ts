@@ -99,9 +99,7 @@ class BezZapreta {
         if (!info.dstAddr.endsWith('.onion') && !isAddrInApplyForDomainsList) {
           dstAddrIp = (await util.promisify(dns.resolve4)(info.dstAddr))[0];
         }
-      } catch (e) {
-        console.log('NS resolve err:', e);
-      }
+      } catch {}
 
       const isAddrInIpBlocks = dstAddrIp && isIpInBlocks(dstAddrIp, this.ipBlocks);
 
