@@ -8,7 +8,7 @@ declare module 'socksv5' {
     listen: net.Server['listen'];
     useAuth(auth: Auth): void;
     close: net.Server['close'];
-    on: (what: string, cb: (...args: any[]) => void) => void;
+    on: (what: string, cb: (...args: any[]) => void) => SocksServer;
   }
 
   type Info = {
@@ -24,7 +24,7 @@ declare module 'socksv5' {
     cb: (info: Info, accept: typeof acceptHandler, deny: () => void) => Promise<void> | void,
   ): SocksServer;
   export function connect(
-    ptions: {
+    options: {
       host: string;
       port: number;
       proxyHost: string;
@@ -33,7 +33,7 @@ declare module 'socksv5' {
       strictLocalDNS?: boolean;
       auths: Auth[];
     },
-    cb: (s: Socket) => void,
+    cb?: (s: Socket) => void,
   ): SocksServer;
 
   export const auth: {

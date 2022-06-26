@@ -1,18 +1,25 @@
 import type { Optional } from './types';
-import { ConnectConfig } from 'ssh2';
-import { getIpBlocks, getIpsListFromUrl, isIpInBlocks } from './ips';
+import { Client as SshClient, ConnectConfig } from 'ssh2';
+import { getIpBlocks, isIpInBlocks } from './ips';
 import { Netmask } from 'netmask';
 import * as socks from 'socksv5';
-import { Client as SshClient } from 'ssh2';
 import util from 'util';
 import dns from 'dns';
+import { Socket } from 'net';
+import { performance } from 'perf_hooks';
+import { checkStringInWildcardList } from './utils/checkStringInWildcardList';
+import { getListFromUrl } from './utils/getListFromUrl';
 
 type BaseOptions = {
   host: string;
   port: number;
   username: string;
   password: string;
-  ipsUrl: string;
+  ipsUrls?: string;
+  domainsUrls?: string;
+  domains?: string[];
+  ips?: string[];
+  withSubdomains?: boolean;
 };
 
 export type BezZapretaOptions =
@@ -30,40 +37,76 @@ export type BezZapretaOptions =
 class BezZapreta {
   private options!: BezZapretaOptions;
   private ipBlocks!: Netmask[];
+  private domains!: string[];
 
-  constructor(options: Optional<BezZapretaOptions, 'host' | 'port' | 'ipsUrl'>) {
+  constructor(options: Optional<BezZapretaOptions, 'host' | 'port'>) {
     this.options = {
       host: '127.0.0.1',
       port: 1080,
-      ipsUrl: 'https://antifilter.download/list/allyouneed.lst',
+      withSubdomains: true,
       ...options,
     } as BezZapretaOptions;
   }
 
   async prepareIpBlocks() {
-    const ipsList = await getIpsListFromUrl(this.options.ipsUrl);
+    const ipsList: string[] = [];
+
+    if (this.options.ipsUrls) {
+      for (const ipsUrl of this.options.ipsUrls) {
+        ipsList.push(...(await getListFromUrl(ipsUrl)));
+      }
+    }
+
+    if (this.options.ips) {
+      ipsList.push(...this.options.ips);
+    }
+
     this.ipBlocks = getIpBlocks(ipsList);
   }
 
-  isIpBanned(ip: string) {
-    return isIpInBlocks(ip, this.ipBlocks);
+  async prepareDomains() {
+    const domains = [];
+
+    if (this.options.domainsUrls) {
+      for (const domainsUrl of this.options.domainsUrls) {
+        domains.push(...(await getListFromUrl(domainsUrl)));
+      }
+    }
+
+    if (this.options.domains) {
+      domains.push(...this.options.domains);
+    }
+
+    this.domains = domains.reduce((acc, domain) => {
+      acc.push(domain);
+      if (this.options.withSubdomains) {
+        acc.push(`*.${domain}`);
+      }
+      return acc;
+    }, [] as string[]);
   }
 
   async start() {
     await this.prepareIpBlocks();
+    await this.prepareDomains();
 
     const server = socks.createServer(async (info, accept, deny): Promise<void> => {
       let dstAddrIp = '';
 
+      const t1 = performance.now();
+
+      const isAddrInApplyForDomainsList = checkStringInWildcardList(info.dstAddr, this.domains);
+
       try {
-        if (!info.dstAddr.endsWith('.onion')) {
+        if (!info.dstAddr.endsWith('.onion') && !isAddrInApplyForDomainsList) {
           dstAddrIp = (await util.promisify(dns.resolve4)(info.dstAddr))[0];
         }
       } catch (e) {
-        console.log(e);
+        console.log('NS resolve err:', e);
       }
 
-      if (!dstAddrIp || this.isIpBanned(dstAddrIp)) {
+      if (!dstAddrIp || isIpInBlocks(dstAddrIp, this.ipBlocks)) {
+        console.log('do for ', info.dstAddr);
         if (this.options.method === 'ssh') {
           const conn = new SshClient();
           conn
@@ -89,6 +132,7 @@ class BezZapreta {
                       });
                   } else {
                     conn.end();
+                    return deny();
                   }
                 },
               );
@@ -120,12 +164,25 @@ class BezZapreta {
                       : socks.auth.None(),
                   ],
                 },
-                (parentSocket) => {
-                  clientSocket.pipe(parentSocket);
-                  parentSocket.pipe(clientSocket);
-                  clientSocket.resume();
+                () => {
+                  const t2 = performance.now();
+                  console.log('1:', t2 - t1);
                 },
               )
+              .on('connect', (parentSocket: Socket) => {
+                const t2 = performance.now();
+                console.log('2:', t2 - t1);
+
+                clientSocket.pipe(parentSocket).on('error', function (e) {
+                  console.log('+94', e);
+                  process.exit(1);
+                });
+                parentSocket.pipe(clientSocket).on('error', function (e) {
+                  console.log('+95', e);
+                  process.exit(1);
+                });
+                clientSocket.resume();
+              })
               .on('error', function (err) {
                 console.log('Parent socks5 err: ', err);
                 deny();
