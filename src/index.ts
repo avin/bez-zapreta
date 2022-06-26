@@ -96,7 +96,7 @@ class BezZapreta {
       const isAddrInApplyForDomainsList = checkStringInWildcardList(info.dstAddr, this.domains);
 
       try {
-        if (!info.dstAddr.endsWith('.onion') && !isAddrInApplyForDomainsList) {
+        if (!isAddrInApplyForDomainsList) {
           dstAddrIp = (await util.promisify(dns.resolve4)(info.dstAddr))[0];
         }
       } catch {}
