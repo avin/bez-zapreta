@@ -35,4 +35,8 @@ void (async () => {
 
   const server = new BezZapreta(config);
   void server.start();
+
+  process.on('uncaughtException', (err) => {
+    console.error('⚠⚠⚠', err);
+  });
 })();

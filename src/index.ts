@@ -6,7 +6,6 @@ import * as socks from 'socksv5';
 import util from 'util';
 import dns from 'dns';
 import { Socket } from 'net';
-import { performance } from 'perf_hooks';
 import { checkStringInWildcardList } from './utils/checkStringInWildcardList';
 import { getListFromUrl } from './utils/getListFromUrl';
 
@@ -114,6 +113,7 @@ class BezZapreta {
           return 'ns';
         })();
         console.info(`+ [${reason}]`, info.dstAddr);
+
         if (this.options.method === 'ssh') {
           const conn = new SshClient();
           conn
@@ -152,7 +152,7 @@ class BezZapreta {
         } else if (this.options.method === 'socks5') {
           const clientSocket = accept(true);
           if (clientSocket) {
-            process.nextTick(function () {
+            process.nextTick(() => {
               clientSocket.pause();
             });
 
@@ -171,17 +171,11 @@ class BezZapreta {
                 ],
               })
               .on('connect', (parentSocket: Socket) => {
-                clientSocket.pipe(parentSocket).on('error', function (e) {
-                  console.log('+94', e);
-                  process.exit(1);
-                });
-                parentSocket.pipe(clientSocket).on('error', function (e) {
-                  console.log('+95', e);
-                  process.exit(1);
-                });
+                clientSocket.pipe(parentSocket);
+                parentSocket.pipe(clientSocket);
                 clientSocket.resume();
               })
-              .on('error', function (err) {
+              .on('error', (err) => {
                 console.log('Parent socks5 err: ', err);
                 deny();
               });
