@@ -35,7 +35,7 @@ export type BezZapretaOptions =
 
 class BezZapreta {
   private options!: BezZapretaOptions;
-  private ipBlocks!: Netmask[];
+  private ipBlocks!: Record<string, Netmask[]>;
   private domains!: string[];
 
   constructor(options: Optional<BezZapretaOptions, 'host' | 'port'>) {
